@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Alerts{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Alerts &amp; Notifications</h1>
+    <p class="sub">Overflow alerts, illegal-dumping alerts and high-priority task notifications.</p>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="{{ url_for('alerts_page') }}" class="{{ 'active' if not status_filter }}">All</a>
+  <a href="{{ url_for('alerts_page', status='New') }}" class="{{ 'active' if status_filter=='New' }}">New</a>
+  <a href="{{ url_for('alerts_page', status='Seen') }}" class="{{ 'active' if status_filter=='Seen' }}">Seen</a>
+  <a href="{{ url_for('alerts_page', status='Resolved') }}" class="{{ 'active' if status_filter=='Resolved' }}">Resolved</a>
+</div>
+
+{% if alerts %}
+<div class="grid cols-2">
+  {% for a in alerts %}
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:6px;">
+      <span class="badge priority-{{ 'Critical' if a.severity=='High' else a.severity }}">{{ a.alert_type }}</span>
+      <span class="badge status-{{ a.status }}">{{ a.status }}</span>
+    </div>
+    <p style="margin:0 0 8px; font-size:13.5px;">{{ a.message }}</p>
+    <div class="flex-between">
+      <span class="small muted">{{ a.created_at }}</span>
+      {% if a.status != 'Resolved' %}
+      <form method="post" action="{{ url_for('resolve_alert', alert_id=a.alert_id) }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Mark Resolved</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">No alerts in this view.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Smart Waste Management{% endblock %} · SWMS</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <span class="dot"></span>
+    <div>
+      SMART WASTE MANAGEMENT &amp; PREDICTION SYSTEM
+      <small>Academic Prototype · Mumbai Municipal Demo</small>
+    </div>
+  </div>
+  {% if current_user.id %}
+  <div class="user-chip">
+    <span>{{ current_user.name }}</span>
+    <span class="role-badge">{{ current_user.role }}</span>
+    <a href="{{ url_for('profile') }}" class="logout-link">Profile</a>
+    <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="app-shell">
+  {% if current_user.id %}
+  <div class="sidebar">
+    {% set role = current_user.role %}
+    {% if role == 'Citizen' %}
+      <div class="section-label">Citizen</div>
+      <a class="nav-link {{ 'active' if request.endpoint == 'citizen_report' }}" href="{{ url_for('citizen_report') }}"><span class="ic">📝</span> Report Garbage</a>
+      <a class="nav-link {{ 'active' if request.endpoint == 'citizen_status' }}" href="{{ url_for('citizen_status') }}"><span class="ic">📋</span> My Complaints</a>
+    {% elif role == 'Driver' %}
+      <div class="section-label">Driver</div>
+      <a class="nav-link {{ 'active' if request.endpoint == 'route_planning' }}" href="{{ url_for('route_planning') }}"><span class="ic">🗺️</span> My Route</a>
+      <a class="nav-link {{ 'active' if request.endpoint == 'truck_tracking' }}" href="{{ url_for('truck_tracking') }}"><span class="ic">🚚</span> Truck Status</a>
+    {% else %}
+      <div class="section-label">Operations</div>
+      <a class="nav-link {{ 'active' if request.endpoint == 'gov_dashboard' }}" href="{{ url_for('gov_dashboard') }}"><span class="ic">📊</span> Dashboard</a>
+      <a class="nav-link {{ 'active' if request.endpoint == 'complaint_management' }}" href="{{ url_for('complaint_management') }}"><span class="ic">📥</span> Complaints</a>
+      <a class="nav-link {{ 'active' if request.endpoint == 'bin_monitoring' }}" href="{{ url_for('bin_monitoring') }}"><span class="ic">🗑️</span> Smart Bins</a>
+      <a class="nav-link {{ 'active' if request.endpoint == 'truck_tracking' }}" href="{{ url_for('truck_tracking') }}"><span class="ic">🚚</span> Truck Tracking</a>
+      <div class="section-label">Intelligence</div>
+      <a class="nav-link {{ 'active' if request.endpoint == 'hotspots' }}" href="{{ url_for('hotspots') }}"><span class="ic">🔥</span> Hotspots &amp; Heatmap</a>
+      <a class="nav-link {{ 'active' if request.endpoint == 'route_planning' }}" href="{{ url_for('route_planning') }}"><span class="ic">🧭</span> Route Planning</a>
+      <a class="nav-link {{ 'active' if request.endpoint == 'analytics' }}" href="{{ url_for('analytics') }}"><span class="ic">📈</span> Analytics &amp; Reports</a>
+      <a class="nav-link {{ 'active' if request.endpoint == 'alerts_page' }}" href="{{ url_for('alerts_page') }}"><span class="ic">🔔</span> Alerts</a>
+      {% if role == 'Administrator' %}
+      <div class="section-label">Admin</div>
+      <a class="nav-link {{ 'active' if request.endpoint == 'admin_users' }}" href="{{ url_for('admin_users') }}"><span class="ic">👤</span> User Management</a>
+      {% endif %}
+    {% endif %}
+    <div class="section-label">Account</div>
+    <a class="nav-link {{ 'active' if request.endpoint == 'profile' }}" href="{{ url_for('profile') }}"><span class="ic">⚙️</span> Profile / Settings</a>
+  </div>
+  {% endif %}
+
+  <div class="main-content {{ '' if current_user.id else 'full' }}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+    <footer class="page-footer">
+      Smart Waste Management &amp; Prediction System — Academic prototype (Flask + SQLite). Sensor, GPS and AI-classification
+      feeds are simulated for demonstration, per project scope.
+    </footer>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

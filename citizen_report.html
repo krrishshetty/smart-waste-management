@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Report Garbage{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Report a Garbage Issue</h1>
+    <p class="sub">Upload a photo and share the location — our AI-assisted system will classify and route it automatically.</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:640px;">
+  <form method="post" enctype="multipart/form-data">
+    <div class="form-row">
+      <label for="description">Describe the issue</label>
+      <textarea id="description" name="description" required placeholder="e.g. Overflowing bin near the bus stop, plastic waste scattered on the road..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <label for="image">Upload a photo (optional, but improves triage)</label>
+      <input type="file" id="image" name="image" accept="image/*">
+      <div class="hint">The system runs an AI-assisted waste-type &amp; severity classification on the uploaded photo.</div>
+    </div>
+
+    <div class="form-inline">
+      <div class="form-row">
+        <label for="ward_id">Ward</label>
+        <select id="ward_id" name="ward_id">
+          <option value="">Select ward (optional)</option>
+          {% for w in wards %}
+            <option value="{{ w.ward_id }}">{{ w.ward_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-inline">
+      <div class="form-row">
+        <label for="latitude">Latitude</label>
+        <input type="text" id="latitude" name="latitude" placeholder="19.0760" readonly>
+      </div>
+      <div class="form-row">
+        <label for="longitude">Longitude</label>
+        <input type="text" id="longitude" name="longitude" placeholder="72.8777" readonly>
+      </div>
+      <div class="form-row" style="flex:0 0 auto;">
+        <label>&nbsp;</label>
+        <button type="button" class="btn btn-secondary" id="locate-btn">📍 Use my location</button>
+      </div>
+    </div>
+    <div class="hint" id="location-hint" style="margin-bottom:14px;">Location is optional — the report can still be submitted without it.</div>
+
+    <button type="submit" class="btn btn-primary">Submit Report</button>
+  </form>
+</div>
+
+<script>
+document.getElementById('locate-btn').addEventListener('click', function () {
+  const hint = document.getElementById('location-hint');
+  if (!navigator.geolocation) {
+    hint.textContent = "Geolocation is not supported by this browser.";
+    return;
+  }
+  hint.textContent = "Detecting location...";
+  navigator.geolocation.getCurrentPosition(function (pos) {
+    document.getElementById('latitude').value = pos.coords.latitude.toFixed(7);
+    document.getElementById('longitude').value = pos.coords.longitude.toFixed(7);
+    hint.textContent = "Location captured.";
+  }, function () {
+    hint.textContent = "Could not detect location — you can still submit without it.";
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Profile &amp; Settings</h1>
+    <p class="sub">Manage your account.</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:480px;">
+  <div class="form-row"><label>Name</label><div>{{ user.name }}</div></div>
+  <div class="form-row"><label>Email</label><div>{{ user.email }}</div></div>
+  <div class="form-row"><label>Role</label><div><span class="badge status-New">{{ current_user.role }}</span></div></div>
+  <div class="form-row"><label>Status</label><div>{{ user.status }}</div></div>
+</div>
+
+<div class="card" style="max-width:480px; margin-top:16px;">
+  <div class="section-title">Change Password</div>
+  <form method="post">
+    <div class="form-row">
+      <label for="new_password">New password</label>
+      <input type="password" id="new_password" name="new_password" minlength="6" placeholder="At least 6 characters">
+    </div>
+    <button type="submit" class="btn btn-primary">Update Password</button>
+  </form>
+</div>
+{% endblock %}

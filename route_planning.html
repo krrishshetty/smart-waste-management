@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Route Planning{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Route Planning</h1>
+    <p class="sub">Generate an optimized collection sequence for a truck's assigned tasks (nearest-neighbour heuristic).</p>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" class="form-inline">
+    <div class="form-row">
+      <label>Select truck</label>
+      <select name="truck_id" onchange="this.form.submit()">
+        <option value="">Choose a truck…</option>
+        {% for t in trucks %}
+          <option value="{{ t.truck_id }}" {{ 'selected' if selected_truck_id == t.truck_id }}>{{ t.registration_no }} ({{ t.status }})</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+</div>
+
+{% if selected_truck_id and route is not none %}
+  {% if route %}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="section-title">Optimized Route — Total {{ total_km }} km</div>
+    <div id="map" class="map-box"></div>
+  </div>
+
+  <div class="card">
+    <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Stop #</th><th>Complaint</th><th>Priority</th><th>Leg Distance</th></tr></thead>
+      <tbody>
+        {% for stop in route %}
+        <tr>
+          <td>{{ stop.route_order }}</td>
+          <td>#{{ stop.id }} — {{ stop.description[:50] }}</td>
+          <td><span class="badge priority-{{ stop.priority }}">{{ stop.priority }}</span></td>
+          <td>{{ stop.leg_km }} km</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card empty-state">This truck has no pending assigned tasks with location data.</div>
+  {% endif %}
+{% elif selected_truck_id %}
+  <div class="card empty-state">Truck not found.</div>
+{% else %}
+  <div class="card empty-state">Select a truck above to generate its optimized collection route.</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if route %}
+<script>
+const map = L.map('map').setView([{{ route[0].latitude }}, {{ route[0].longitude }}], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 18 }).addTo(map);
+const route = {{ route|tojson }};
+const latlngs = route.map(s => [s.latitude, s.longitude]);
+L.polyline(latlngs, { color: '#2f6fed', weight: 3, dashArray: '6' }).addTo(map);
+route.forEach(s => {
+  L.marker([s.latitude, s.longitude], { icon: L.divIcon({ className: '', html: `<div style="background:#2f6fed;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">${s.route_order}</div>` }) })
+    .addTo(map).bindPopup(`Stop ${s.route_order}: #${s.id}<br>${s.priority} priority`);
+});
+map.fitBounds(latlngs, { padding: [30,30] });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Analytics & Reports{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Analytics &amp; Reports</h1>
+    <p class="sub">Waste-generation trends, ward performance and environmental impact indicators.</p>
+  </div>
+  <button class="btn btn-secondary" onclick="window.print()">⭳ Export / Print</button>
+</div>
+
+<div class="grid cols-3" style="margin-bottom:16px;">
+  <div class="card stat-card blue">
+    <span class="stat-label">Total Complaints</span>
+    <span class="stat-value">{{ total_complaints }}</span>
+  </div>
+  <div class="card stat-card green">
+    <span class="stat-label">Resolved</span>
+    <span class="stat-value">{{ resolved }}</span>
+  </div>
+  <div class="card stat-card purple">
+    <span class="stat-label">Resolution Rate</span>
+    <span class="stat-value">{{ resolution_rate }}%</span>
+  </div>
+</div>
+
+<div class="grid cols-2" style="align-items:start;">
+  <div class="card">
+    <div class="section-title">Waste Generation Trend (Complaints / Day)</div>
+    <canvas id="trendChart" height="200"></canvas>
+  </div>
+  <div class="card">
+    <div class="section-title">Waste Category Split (AI-classified)</div>
+    <canvas id="categoryChart" height="200"></canvas>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="section-title">Ward-wise Collection &amp; Cleanliness Report</div>
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Ward</th><th>Total Complaints</th><th>Resolved</th><th>Resolution Rate</th></tr></thead>
+    <tbody>
+      {% for w in ward_perf %}
+      <tr>
+        <td>{{ w.ward_name }}</td>
+        <td>{{ w.total }}</td>
+        <td>{{ w.resolved or 0 }}</td>
+        <td>
+          {% set rate = ((w.resolved or 0) / w.total * 100) if w.total else 0 %}
+          <div class="risk-bar-track" style="margin-bottom:4px; max-width:140px;"><div class="risk-bar-fill" style="width:{{ rate }}%"></div></div>
+          <span class="small">{{ rate | round(1) }}%</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="section-title">Environmental Impact (Indicative)</div>
+  <div class="grid cols-3">
+    <div>
+      <div class="stat-value" style="font-size:20px;">{{ resolved }}</div>
+      <div class="small muted">Waste events resolved this period</div>
+    </div>
+    <div>
+      <div class="stat-value" style="font-size:20px;">{{ (resolved * 0.18) | round(1) }} t</div>
+      <div class="small muted">Estimated waste diverted from overflow (indicative)</div>
+    </div>
+    <div>
+      <div class="stat-value" style="font-size:20px;">{{ resolution_rate }}%</div>
+      <div class="small muted">Overall complaint resolution rate</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const trend = {{ trend|tojson }};
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: trend.map(t => t.d),
+    datasets: [{ label: 'Complaints', data: trend.map(t => t.c), borderColor: '#2f6fed', backgroundColor: 'rgba(47,111,237,.12)', fill: true, tension: 0.3 }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+
+const cat = {{ category_split|tojson }};
+new Chart(document.getElementById('categoryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: cat.map(c => c.waste_type),
+    datasets: [{ data: cat.map(c => c.c), backgroundColor: ['#2f6fed','#1c9c6b','#d98c00','#d9483c','#6c4bd9','#8a94a6'] }]
+  }
+});
+</script>
+{% endblock %}

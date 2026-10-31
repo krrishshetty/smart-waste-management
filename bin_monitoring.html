@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Smart Bin Monitoring{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Smart Bin Monitoring</h1>
+    <p class="sub">Live fill-level tracking across all registered smart bins.</p>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" class="form-inline">
+    <div class="form-row">
+      <label>Ward</label>
+      <select name="ward_id">
+        <option value="">All wards</option>
+        {% for w in wards %}
+          <option value="{{ w.ward_id }}" {{ 'selected' if ward_filter|string == w.ward_id|string }}>{{ w.ward_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Status</label>
+      <select name="status">
+        <option value="">All</option>
+        {% for s in ['Normal','Warning','Overflow'] %}
+          <option value="{{ s }}" {{ 'selected' if status_filter == s }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Bin</th><th>Ward</th><th>Fill Level</th><th>Status</th><th>Last Reading</th><th>Simulate Reading</th></tr></thead>
+    <tbody>
+      {% for b in bins %}
+      <tr>
+        <td>{{ b.label or ('Bin #' ~ b.bin_id) }}</td>
+        <td>{{ b.ward_name }}</td>
+        <td style="min-width:140px;">
+          <div class="risk-bar-track" style="margin-bottom:4px;"><div class="risk-bar-fill" style="width:{{ b.fill_level }}%"></div></div>
+          <span class="small">{{ b.fill_level }}%</span>
+        </td>
+        <td><span class="badge status-{{ b.status }}">{{ b.status }}</span></td>
+        <td class="small muted">{{ b.last_reading }}</td>
+        <td>
+          <form method="post" action="{{ url_for('add_bin_reading', bin_id=b.bin_id) }}" class="flex gap-8">
+            <input type="number" name="fill_level" min="0" max="100" placeholder="%" style="width:70px;" required>
+            <button type="submit" class="btn btn-secondary btn-sm">Log</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="empty-state">No bins match this filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

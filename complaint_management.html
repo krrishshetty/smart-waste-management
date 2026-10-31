@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Complaint Management{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Complaint Management</h1>
+    <p class="sub">Review, prioritize, assign and resolve citizen reports.</p>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" class="form-inline">
+    <div class="form-row">
+      <label>Search</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="Complaint ID or keyword...">
+    </div>
+    <div class="form-row">
+      <label>Status</label>
+      <select name="status">
+        <option value="">All</option>
+        {% for s in ['New','Assigned','Collected','Resolved'] %}
+          <option value="{{ s }}" {{ 'selected' if status_filter == s }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Ward</label>
+      <select name="ward_id">
+        <option value="">All wards</option>
+        {% for w in wards %}
+          <option value="{{ w.ward_id }}" {{ 'selected' if ward_filter|string == w.ward_id|string }}>{{ w.ward_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>ID</th><th>Citizen</th><th>Description</th><th>Ward</th><th>Priority</th><th>Status</th><th>Reported</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for c in complaints %}
+      <tr>
+        <td>#{{ c.complaint_id }}</td>
+        <td>{{ c.citizen_name }}</td>
+        <td style="max-width:220px;">{{ c.description }}</td>
+        <td>{{ c.ward_name or '—' }}</td>
+        <td><span class="badge priority-{{ c.priority }}">{{ c.priority }}</span></td>
+        <td><span class="badge status-{{ c.status.replace(' ','') }}">{{ c.status }}</span></td>
+        <td class="small muted">{{ c.created_at }}</td>
+        <td>
+          <form method="post" action="{{ url_for('update_complaint', complaint_id=c.complaint_id) }}" class="flex gap-8" style="flex-wrap:wrap;">
+            <select name="priority" class="btn-sm" style="padding:5px 8px;">
+              {% for p in ['Low','Medium','High','Critical'] %}
+              <option value="{{ p }}" {{ 'selected' if c.priority == p }}>{{ p }}</option>
+              {% endfor %}
+            </select>
+            <select name="status" style="padding:5px 8px;">
+              {% for s in ['New','Assigned','Collected','Resolved'] %}
+              <option value="{{ s }}" {{ 'selected' if c.status == s }}>{{ s }}</option>
+              {% endfor %}
+            </select>
+            <select name="truck_id" style="padding:5px 8px;">
+              <option value="">Assign truck…</option>
+              {% for t in trucks %}
+              <option value="{{ t.truck_id }}">{{ t.registration_no }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="empty-state">No complaints match this filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Hotspots & Heatmap{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Waste Hotspot Prediction</h1>
+    <p class="sub">Ward-level risk scores from complaint pressure + bin fill levels, and detected illegal-dumping clusters.</p>
+  </div>
+  <form method="post" action="{{ url_for('recompute_hotspots') }}">
+    <button type="submit" class="btn btn-primary">↻ Recompute Predictions</button>
+  </form>
+</div>
+
+<div class="grid cols-3" style="align-items:start;">
+  <div class="card" style="grid-column: span 2;">
+    <div class="section-title">Ward Risk Heatmap</div>
+    <div id="map" class="map-box tall"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Ward Risk Ranking</div>
+    <div class="table-scroll" style="max-height:480px; overflow-y:auto;">
+    <table class="data-table">
+      <thead><tr><th>Ward</th><th>Risk</th></tr></thead>
+      <tbody>
+        {% for h in risk_scores %}
+        <tr>
+          <td>
+            {{ h.ward_name }}
+            <div class="small muted">{{ h.open_complaints }} open complaints · {{ h.avg_fill_level }}% avg fill</div>
+          </td>
+          <td style="min-width:100px;">
+            <div class="risk-bar-track" style="margin-bottom:4px;"><div class="risk-bar-fill" style="width:{{ h.risk_score }}%"></div></div>
+            <span class="small">{{ h.risk_score }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="section-title">Detected Illegal-Dumping Clusters</div>
+  <p class="small muted">Locations with 3 or more open complaints within ~300m of each other (SRS 3.8).</p>
+  {% if dumping_clusters %}
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Ward</th><th>Repeated Complaints</th><th>Related Complaint IDs</th></tr></thead>
+    <tbody>
+      {% for c in dumping_clusters %}
+      <tr>
+        <td>{{ wards[c.ward_id].ward_name if c.ward_id in wards else '—' }}</td>
+        <td><span class="badge priority-High">{{ c.count }} reports</span></td>
+        <td class="small muted">{{ c.complaint_ids | join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty-state">No repeated-dumping clusters detected right now.</div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const map = L.map('map').setView([19.076, 72.877], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 18 }).addTo(map);
+
+const bins = {{ bins|tojson }};
+const binColor = { Normal: '#1c9c6b', Warning: '#d98c00', Overflow: '#d9483c' };
+bins.forEach(b => {
+  if (!b.latitude || !b.longitude) return;
+  L.circleMarker([b.latitude, b.longitude], {
+    radius: 5, color: binColor[b.status] || '#999', fillColor: binColor[b.status] || '#999', fillOpacity: 0.7, weight: 1
+  }).addTo(map).bindPopup(`${b.label || 'Bin #' + b.bin_id}<br>Fill: ${b.fill_level}%`);
+});
+
+const clusters = {{ dumping_clusters|tojson }};
+clusters.forEach(c => {
+  L.circle([c.latitude, c.longitude], {
+    radius: 350, color: '#d9483c', fillColor: '#d9483c', fillOpacity: 0.15, weight: 2, dashArray: '4'
+  }).addTo(map).bindPopup(`<b>Illegal-dumping cluster</b><br>${c.count} repeated reports`);
+});
+</script>
+{% endblock %}

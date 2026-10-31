@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Truck Tracking{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Garbage Truck Tracking</h1>
+    <p class="sub">Live vehicle locations and collection-task progress.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div id="map" class="map-box"></div>
+</div>
+
+<div class="grid cols-2" style="margin-top:16px; align-items:start;">
+  <div class="card">
+    <div class="section-title">Fleet Status</div>
+    <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Truck</th><th>Driver</th><th>Ward</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for t in trucks %}
+        <tr>
+          <td>{{ t.registration_no }}</td>
+          <td>{{ t.driver_name or '—' }}</td>
+          <td>{{ t.ward_name or '—' }}</td>
+          <td><span class="badge status-{{ t.status }}">{{ t.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Active Collection Tasks</div>
+    <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Task</th><th>Truck</th><th>Related</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for t in tasks %}
+        <tr>
+          <td>#{{ t.task_id }}</td>
+          <td>{{ t.registration_no }}</td>
+          <td class="small">{{ (t.description or '')[:40] }}</td>
+          <td><span class="badge status-{{ t.status.replace(' ','') }}">{{ t.status }}</span></td>
+          <td>
+            <form method="post" action="{{ url_for('update_task_status', task_id=t.task_id) }}" class="flex gap-8">
+              <select name="status" style="padding:4px 6px;">
+                <option value="Assigned" {{ 'selected' if t.status=='Assigned' }}>Assigned</option>
+                <option value="In Progress" {{ 'selected' if t.status=='In Progress' }}>In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+              <button type="submit" class="btn btn-secondary btn-sm">Update</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="empty-state">No active tasks.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const map = L.map('map').setView([19.076, 72.877], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 18 }).addTo(map);
+const trucks = {{ trucks|tojson }};
+const statusColor = { Active: '#1c9c6b', Available: '#2f6fed', Maintenance: '#d9483c' };
+trucks.forEach(t => {
+  if (!t.latitude || !t.longitude) return;
+  L.circleMarker([t.latitude, t.longitude], { radius: 8, color: statusColor[t.status] || '#666', fillColor: statusColor[t.status] || '#666', fillOpacity: 0.85 })
+    .addTo(map).bindPopup(`<b>${t.registration_no}</b><br>Driver: ${t.driver_name || '—'}<br>Status: ${t.status}`);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login · Smart Waste Management</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-box">
+    <div class="logo-row"><span class="dot"></span><strong>SWMS</strong></div>
+    <h1>Smart Waste Management &amp; Prediction System</h1>
+    <p class="tagline">A data-driven platform for cleaner, smarter and more efficient cities.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" action="{{ url_for('login') }}">
+      <div class="form-row">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required autofocus placeholder="you@example.com">
+      </div>
+      <div class="form-row">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Login</button>
+    </form>
+
+    <div class="demo-accounts">
+      <strong>Demo accounts (seeded)</strong>
+      <table>
+        <tr><td>Administrator</td><td><code>admin@swms.gov.in</code> / <code>admin123</code></td></tr>
+        <tr><td>Government Operator</td><td><code>operator@swms.gov.in</code> / <code>operator123</code></td></tr>
+        <tr><td>Analyst</td><td><code>analyst@swms.gov.in</code> / <code>analyst123</code></td></tr>
+        <tr><td>Citizen</td><td><code>citizen@example.com</code> / <code>citizen123</code></td></tr>
+        <tr><td>Driver</td><td><code>driver1@swms.gov.in</code> / <code>driver123</code></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

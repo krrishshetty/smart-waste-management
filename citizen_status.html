@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}My Complaints{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>My Complaints</h1>
+    <p class="sub">Track the status of every report you've submitted.</p>
+  </div>
+  <a href="{{ url_for('citizen_report') }}" class="btn btn-primary">+ New Report</a>
+</div>
+
+{% if complaints %}
+<div class="grid cols-3">
+  {% for c in complaints %}
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:8px;">
+      <strong>#{{ c.complaint_id }}</strong>
+      <span class="badge status-{{ c.status.replace(' ', '') }}">{{ c.status }}</span>
+    </div>
+    <p style="margin:0 0 10px; font-size:13.5px;">{{ c.description }}</p>
+    <div class="small muted" style="margin-bottom:6px;">📍 {{ c.ward_name or "Location not specified" }}</div>
+    <div class="small muted" style="margin-bottom:10px;">🕒 {{ c.created_at }}</div>
+    <div class="flex gap-8" style="flex-wrap:wrap;">
+      <span class="badge priority-{{ c.priority }}">{{ c.priority }} priority</span>
+      {% if c.waste_type %}
+        <span class="badge status-New">{{ c.waste_type }} · {{ c.confidence }}% confidence</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">You haven't submitted any reports yet. <a href="{{ url_for('citizen_report') }}">Report one now</a>.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Government Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Government Dashboard</h1>
+    <p class="sub">City-wide operational overview — live bins, trucks and complaints.</p>
+  </div>
+</div>
+
+<div class="grid cols-5">
+  <div class="card stat-card blue">
+    <span class="stat-label">Active Complaints</span>
+    <span class="stat-value">{{ stats.active_complaints }}</span>
+  </div>
+  <div class="card stat-card red">
+    <span class="stat-label">Overflow Bins</span>
+    <span class="stat-value">{{ stats.overflow_bins }}</span>
+  </div>
+  <div class="card stat-card amber">
+    <span class="stat-label">Warning Bins</span>
+    <span class="stat-value">{{ stats.warning_bins }}</span>
+  </div>
+  <div class="card stat-card green">
+    <span class="stat-label">Active Trucks</span>
+    <span class="stat-value">{{ stats.active_trucks }}</span>
+  </div>
+  <div class="card stat-card purple">
+    <span class="stat-label">Unresolved Alerts</span>
+    <span class="stat-value">{{ stats.unresolved_alerts }}</span>
+  </div>
+</div>
+
+<div class="grid cols-3" style="margin-top:16px; align-items:start;">
+  <div class="card" style="grid-column: span 2;">
+    <div class="section-title">Live City Map — Bins, Trucks &amp; Complaints</div>
+    <div id="map" class="map-box"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Top Predicted Hotspot Wards</div>
+    {% for h in top_hotspots %}
+    <div style="margin-bottom:12px;">
+      <div class="flex-between small" style="margin-bottom:4px;">
+        <span>{{ h.ward_name }}</span>
+        <strong>{{ h.risk_score }}</strong>
+      </div>
+      <div class="risk-bar-track"><div class="risk-bar-fill" style="width:{{ h.risk_score }}%"></div></div>
+    </div>
+    {% else %}
+    <p class="muted small">No hotspot data yet.</p>
+    {% endfor %}
+    <a href="{{ url_for('hotspots') }}" class="btn btn-secondary btn-sm" style="margin-top:6px;">View full hotspot analysis →</a>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="flex-between" style="margin-bottom:10px;">
+    <div class="section-title" style="margin:0;">Recent Complaints</div>
+    <a href="{{ url_for('complaint_management') }}" class="btn btn-secondary btn-sm">Manage all →</a>
+  </div>
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>ID</th><th>Description</th><th>Ward</th><th>Priority</th><th>Status</th><th>Reported</th></tr></thead>
+    <tbody>
+      {% for c in recent_complaints %}
+      <tr>
+        <td>#{{ c.complaint_id }}</td>
+        <td>{{ c.description[:60] }}{{ '…' if c.description|length > 60 else '' }}</td>
+        <td>{{ c.ward_name or '—' }}</td>
+        <td><span class="badge priority-{{ c.priority }}">{{ c.priority }}</span></td>
+        <td><span class="badge status-{{ c.status.replace(' ','') }}">{{ c.status }}</span></td>
+        <td class="small muted">{{ c.created_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const map = L.map('map').setView([19.076, 72.877], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
+}).addTo(map);
+
+const bins = {{ bins|tojson }};
+const trucks = {{ trucks|tojson }};
+const complaints = {{ complaints|tojson }};
+
+const binColor = { Normal: '#1c9c6b', Warning: '#d98c00', Overflow: '#d9483c' };
+bins.forEach(b => {
+  if (!b.latitude || !b.longitude) return;
+  L.circleMarker([b.latitude, b.longitude], {
+    radius: 6, color: binColor[b.status] || '#999', fillColor: binColor[b.status] || '#999', fillOpacity: 0.85, weight: 1
+  }).addTo(map).bindPopup(`<b>${b.label || 'Bin #' + b.bin_id}</b><br>Fill level: ${b.fill_level}%<br>Status: ${b.status}`);
+});
+
+trucks.forEach(t => {
+  if (!t.latitude || !t.longitude) return;
+  L.marker([t.latitude, t.longitude], {
+    icon: L.divIcon({ className: '', html: '🚚', iconSize: [22,22] })
+  }).addTo(map).bindPopup(`<b>${t.registration_no}</b><br>Driver: ${t.driver_name || '—'}<br>Status: ${t.status}`);
+});
+
+complaints.forEach(c => {
+  if (!c.latitude || !c.longitude) return;
+  L.circleMarker([c.latitude, c.longitude], {
+    radius: 5, color: '#2f6fed', fillColor: '#2f6fed', fillOpacity: 0.6, weight: 1
+  }).addTo(map).bindPopup(`Complaint #${c.complaint_id}<br>Priority: ${c.priority}<br>Status: ${c.status}`);
+});
+</script>
+{% endblock %}
