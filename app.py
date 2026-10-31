@@ -12,6 +12,12 @@ import logic
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "swms.db")
+SCHEMA_PATH = os.path.join(BASE_DIR, "schema.sql")
+
+def init_db():
+    with sqlite3.connect(DB_PATH) as db:
+        with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
+            db.executescript(f.read())
 UPLOAD_DIR = os.path.join(BASE_DIR, "static", "uploads")
 ALLOWED_EXT = {"png", "jpg", "jpeg", "gif", "webp"}
 
@@ -29,6 +35,8 @@ class RowJSONProvider(app.json_provider_class):
 
 
 app.json = RowJSONProvider(app)
+with app.app_context():
+    init_db()
 
 
 # ---------------------------------------------------------------------------
