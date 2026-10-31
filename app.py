@@ -13,6 +13,32 @@ import logic
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "swms.db")
 SCHEMA_PATH = os.path.join(BASE_DIR, "schema.sql")
+def create_admin():
+    with sqlite3.connect(DB_PATH) as db:
+        db.execute("PRAGMA foreign_keys = ON")
+
+        db.execute("""
+            INSERT OR IGNORE INTO role (role_id, role_name)
+            VALUES (1, 'Admin')
+        """)
+
+        admin_password = generate_password_hash("Admin@123")
+
+        db.execute("""
+            INSERT OR IGNORE INTO user
+            (full_name, email, password_hash, role_id)
+            VALUES (?, ?, ?, ?)
+        """, (
+            "System Admin",
+            "admin@swms.gov.in",
+            admin_password,
+            1
+        ))
+
+        db.commit()
+
+
+create_admin()
 
 def init_db():
     with sqlite3.connect(DB_PATH) as db:
