@@ -13,47 +13,21 @@ import logic
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "swms.db")
 SCHEMA_PATH = os.path.join(BASE_DIR, "schema.sql")
-def create_admin():
-    with sqlite3.connect(DB_PATH) as db:
-        db.execute("PRAGMA foreign_keys = ON")
 
-        db.execute("""
-            INSERT OR IGNORE INTO role (role_id, role_name)
-            VALUES (1, 'Admin')
-        """)
+# Flask application setup
+app = Flask(__name__)
+app.config["SECRET_KEY"] = os.environ.get(
+    "SECRET_KEY", "dev-secret-key-change-in-production"
+)
+app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB uploads
 
-        admin_password = generate_password_hash("Admin@123")
-
-        db.execute("""
-            INSERT OR IGNORE INTO user
-            (full_name, email, password_hash, role_id)
-            VALUES (?, ?, ?, ?)
-        """, (
-            "System Admin",
-            "admin@swms.gov.in",
-            admin_password,
-            1
-        ))
-
-        db.commit()
-
-
-create_admin()
-
-def init_db():
-    with sqlite3.connect(DB_PATH) as db:
-        with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
-            db.executescript(f.read())
 UPLOAD_DIR = os.path.join(BASE_DIR, "static", "uploads")
 ALLOWED_EXT = {"png", "jpg", "jpeg", "gif", "webp"}
-
-app = Flask(__name__)
-app.config["SECRET_KEY"] = "dev-secret-key-change-in-production"
-app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB uploads
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 class RowJSONProvider(app.json_provider_class):
-    """Lets |tojson in templates serialize sqlite3.Row objects (used for map/chart data)."""
+    """Allow templates to serialize sqlite3.Row objects with |tojson."""
     def default(self, o):
         if isinstance(o, sqlite3.Row):
             return dict(o)
@@ -61,8 +35,40 @@ class RowJSONProvider(app.json_provider_class):
 
 
 app.json = RowJSONProvider(app)
-with app.app_context():
-    init_db()
+def init_db():
+    with sqlite3.connect(DB_PATH) as db:
+        with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
+            db.executescript(f.read())
+
+
+def create_admin():
+    with sqlite3.connect(DB_PATH) as db:
+        db.execute("PRAGMA foreign_keys = ON")
+
+        db.execute(
+            "INSERT OR IGNORE INTO role (role_name) VALUES (?)",
+            ("Administrator",)
+        )
+
+        role_id = db.execute(
+            "SELECT role_id FROM role WHERE role_name = ?",
+            ("Administrator",)
+        ).fetchone()[0]
+
+        admin_password = generate_password_hash("Admin@123")
+
+        db.execute("""
+            INSERT OR IGNORE INTO user
+            (name, email, password, role_id, status)
+            VALUES (?, ?, ?, ?, 'Active')
+        """, (
+            "System Admin",
+            "admin@swms.gov.in",
+            admin_password,
+            role_id
+        ))
+
+        db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -74,6 +80,11 @@ def get_db():
         g.db.row_factory = sqlite3.Row
         g.db.execute("PRAGMA foreign_keys = ON")
     return g.db
+
+
+# Create the database tables first, then create the default administrator.
+init_db()
+create_admin()
 
 
 @app.teardown_appcontext
