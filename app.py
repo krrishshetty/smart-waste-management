@@ -55,18 +55,35 @@ def create_admin():
             ("Administrator",)
         ).fetchone()[0]
 
-        admin_password = generate_password_hash("Admin@123")
+        admin_password = generate_password_hash("admin123")
 
-        db.execute("""
-            INSERT OR IGNORE INTO user
-            (name, email, password, role_id, status)
-            VALUES (?, ?, ?, ?, 'Active')
-        """, (
-            "System Admin",
-            "admin@swms.gov.in",
-            admin_password,
-            role_id
-        ))
+        existing_admin = db.execute(
+            "SELECT user_id FROM user WHERE email = ?",
+            ("admin@swms.gov.in",)
+        ).fetchone()
+
+        if existing_admin:
+            db.execute("""
+                UPDATE user
+                SET name = ?, password = ?, role_id = ?, status = 'Active'
+                WHERE email = ?
+            """, (
+                "System Admin",
+                admin_password,
+                role_id,
+                "admin@swms.gov.in"
+            ))
+        else:
+            db.execute("""
+                INSERT INTO user
+                (name, email, password, role_id, status)
+                VALUES (?, ?, ?, ?, 'Active')
+            """, (
+                "System Admin",
+                "admin@swms.gov.in",
+                admin_password,
+                role_id
+            ))
 
         db.commit()
 
