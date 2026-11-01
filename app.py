@@ -42,48 +42,47 @@ def init_db():
 
 
 def create_admin():
+    demo_users = [
+        ("System Admin", "admin@swms.gov.in", "admin123", "Administrator"),
+        ("Government Operator", "operator@swms.gov.in", "operator123", "Government Operator"),
+        ("Analyst", "analyst@swms.gov.in", "analyst123", "Analyst"),
+        ("Citizen", "citizen@example.com", "citizen123", "Citizen"),
+        ("Driver", "driver1@swms.gov.in", "driver123", "Driver")
+    ]
+
     with sqlite3.connect(DB_PATH) as db:
         db.execute("PRAGMA foreign_keys = ON")
 
-        db.execute(
-            "INSERT OR IGNORE INTO role (role_name) VALUES (?)",
-            ("Administrator",)
-        )
+        for name, email, password, role_name in demo_users:
+            db.execute(
+                "INSERT OR IGNORE INTO role (role_name) VALUES (?)",
+                (role_name,)
+            )
 
-        role_id = db.execute(
-            "SELECT role_id FROM role WHERE role_name = ?",
-            ("Administrator",)
-        ).fetchone()[0]
+            role_id = db.execute(
+                "SELECT role_id FROM role WHERE role_name = ?",
+                (role_name,)
+            ).fetchone()[0]
 
-        admin_password = generate_password_hash("admin123")
+            password_hash = generate_password_hash(password)
 
-        existing_admin = db.execute(
-            "SELECT user_id FROM user WHERE email = ?",
-            ("admin@swms.gov.in",)
-        ).fetchone()
+            existing_user = db.execute(
+                "SELECT user_id FROM user WHERE email = ?",
+                (email,)
+            ).fetchone()
 
-        if existing_admin:
-            db.execute("""
-                UPDATE user
-                SET name = ?, password = ?, role_id = ?, status = 'Active'
-                WHERE email = ?
-            """, (
-                "System Admin",
-                admin_password,
-                role_id,
-                "admin@swms.gov.in"
-            ))
-        else:
-            db.execute("""
-                INSERT INTO user
-                (name, email, password, role_id, status)
-                VALUES (?, ?, ?, ?, 'Active')
-            """, (
-                "System Admin",
-                "admin@swms.gov.in",
-                admin_password,
-                role_id
-            ))
+            if existing_user:
+                db.execute("""
+                    UPDATE user
+                    SET name = ?, password = ?, role_id = ?, status = 'Active'
+                    WHERE email = ?
+                """, (name, password_hash, role_id, email))
+            else:
+                db.execute("""
+                    INSERT INTO user
+                    (name, email, password, role_id, status)
+                    VALUES (?, ?, ?, ?, 'Active')
+                """, (name, email, password_hash, role_id))
 
         db.commit()
 
